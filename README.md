@@ -1,5 +1,11 @@
 # IUVO RS-232 for Home Assistant
 
+<p align="center">
+  <a href="https://buycoffee.to/homeon">
+    <img src="https://img.shields.io/badge/BuyCoffee-Wesprzyj%20HomeOn-F6C344?style=for-the-badge&logo=buymeacoffee&logoColor=000000" alt="Wesprzyj HomeOn przez BuyCoffee">
+  </a>
+</p>
+
 Lokalna integracja systemu automatyki **IUVO** z Home Assistantem przez RS-232.
 
 Projekt powstał na podstawie analizy programu IUVO Expert 2.23. Komunikacja jest
@@ -69,6 +75,10 @@ AT+SetRol=1,30,1,0,0,0
 - kopia i odtworzenie konfiguracji modułów;
 - bezpieczne odtworzenie funkcji IUVO Expert w Home Assistant;
 - import dotychczasowych projektów XML.
+
+## Wsparcie projektu
+
+Rozwój integracji IUVO RS-232 i projektów HomeOn możesz wesprzeć przez [BuyCoffee](https://buycoffee.to/homeon).
 
 ## Ważne
 
