@@ -1,0 +1,15 @@
+send_command:
+  name: Wyślij komendę IUVO
+  description: Wysyła bezpieczną komendę AT. Komendy programujące AT+key i AT+Save są zablokowane.
+  fields:
+    command:
+      name: Komenda
+      description: Komenda bez końcowego CR/LF.
+      required: true
+      example: AT+StanIn=1
+      selector:
+        text:
+
+rescan:
+  name: Wykryj moduły
+  description: Skanuje adresy IUVO od 1 do ustawionego limitu bez zapisywania konfiguracji.
