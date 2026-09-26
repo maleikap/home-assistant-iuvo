@@ -74,10 +74,10 @@ class IuvoCoordinator(DataUpdateCoordinator[dict[int, IuvoModule]]):
         try:
             if not self._discovery_complete:
                 await self.async_rescan()
-            for module in self.modules.values():
-                module.online = False
-                for kind in STATE_KINDS:
-                    await self.async_command(build_state_command(kind, module.address))
+            # IUVO Expert requests one bus-wide snapshot with address 0.
+            # Modules identify themselves in O=/I=/L=/R= response frames.
+            for kind in STATE_KINDS:
+                await self.async_command(build_state_command(kind, 0))
             return self.modules
         except IuvoConnectionError as err:
             raise UpdateFailed(f"IUVO serial communication failed: {err}") from err
