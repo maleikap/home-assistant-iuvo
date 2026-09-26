@@ -34,6 +34,7 @@ _MODULE_TYPES = {
     "1": "IUVO Controller0806",
     "2": "IUVO Controller0806RTC",
     "3": "IUVO Roller Shutter0804",
+    "4": "IUVO module type 4",
 }
 
 
@@ -241,6 +242,9 @@ class IuvoSerialClient:
                 self._serial.reset_input_buffer()
                 self._serial.write(b"AT\r\n")
                 self._serial.flush()
+                # The gateway answers AT with OK and only then enters search
+                # mode. IUVO Expert leaves roughly half a second here.
+                time.sleep(0.5)
 
                 lines: list[str] = []
                 pending = bytearray()
@@ -250,7 +254,9 @@ class IuvoSerialClient:
                     command = f"AT+Search=0,{address}\r\n".encode("ascii")
                     self._serial.write(command)
                     self._serial.flush()
-                    time.sleep(0.12)
+                    # Modules answer on the shared bus. A shorter interval can
+                    # overlap responses; the original program uses ~250 ms.
+                    time.sleep(0.25)
                     self._read_available(lines, pending)
 
                 deadline = time.monotonic() + max(1.0, self.timeout)
