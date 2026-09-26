@@ -26,9 +26,16 @@ _STATE_NAMES = {
     "StanLamp": STATE_LAMPS,
     "StanRol": STATE_SHUTTERS,
 }
+_SHORT_STATE_NAMES = {
+    "I": STATE_INPUTS,
+    "O": STATE_OUTPUTS,
+    "L": STATE_LAMPS,
+    "R": STATE_SHUTTERS,
+}
 _STATE_RE = re.compile(
     r"^(?:AT\+)?(StanIn|StanOut|StanLamp|StanRol)\s*=\s*(.+)$", re.IGNORECASE
 )
+_SHORT_STATE_RE = re.compile(r"^([OILR])\s*=\s*(.+)$", re.IGNORECASE)
 _FIND_RE = re.compile(r"^AT\+Find\s*=\s*(.+)$", re.IGNORECASE)
 _MODULE_TYPES = {
     "1": "IUVO Controller0806",
@@ -99,6 +106,22 @@ def parse_frame(line: str) -> ParsedFrame | None:
         if not integers:
             return ParsedFrame(_STATE_NAMES[name], None, raw=raw)
         return ParsedFrame(_STATE_NAMES[name], integers[0], integers[1:], raw=raw)
+
+    short_state_match = _SHORT_STATE_RE.match(raw)
+    if short_state_match:
+        name, payload = short_state_match.groups()
+        fields = [item.strip() for item in payload.split(",")]
+        integers: list[int] = []
+        for item in fields:
+            try:
+                integers.append(int(item, 0))
+            except ValueError:
+                continue
+        if not integers:
+            return ParsedFrame(_SHORT_STATE_NAMES[name.upper()], None, raw=raw)
+        return ParsedFrame(
+            _SHORT_STATE_NAMES[name.upper()], integers[0], integers[1:], raw=raw
+        )
 
     find_match = _FIND_RE.match(raw)
     if find_match:
@@ -232,12 +255,10 @@ class IuvoSerialClient:
                 while time.monotonic() < deadline:
                     raw = self._serial.readline()
                     if not raw:
-                        break
+                        continue
                     decoded = raw.decode("ascii", errors="replace").strip()
                     if decoded:
                         lines.append(decoded)
-                    if self._serial.in_waiting == 0:
-                        break
                 return lines
             except (OSError, serial.SerialException) as err:
                 self.close()
