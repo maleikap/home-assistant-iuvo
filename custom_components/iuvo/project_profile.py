@@ -15,15 +15,10 @@ SWITCH_NAMES: dict[int, dict[int, str]] = {
     8: {6: "Beleuchtung Abstellraum"},
 }
 
-# Outputs renamed by the user in Home Assistant as gate controls. Keep them
-# in the switch platform (and keep their unique IDs) so custom names and
-# dashboard references survive upgrades, but operate them as short pulses.
-MOMENTARY_OUTPUTS: frozenset[tuple[int, int]] = frozenset(
-    {
-        (1, 5),  # Brama wjazdowa
-        (2, 6),  # Brama Lager
-    }
-)
+MOMENTARY_OUTPUTS: dict[tuple[int, int], str] = {
+    (1, 5): "Brama wjazdowa",
+    (2, 6): "Brama Lager",
+}
 
 COVER_NAMES: dict[int, dict[int, str]] = {
     5: {
