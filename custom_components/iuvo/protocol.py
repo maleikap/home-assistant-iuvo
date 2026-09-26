@@ -188,7 +188,14 @@ class IuvoSerialClient:
                     stopbits=serial.STOPBITS_ONE,
                     timeout=self.timeout,
                     write_timeout=1,
+                    xonxoff=False,
+                    rtscts=False,
+                    dsrdtr=False,
                 )
+                # .NET SerialPort (used by IUVO Expert) keeps both modem
+                # control lines disabled. PySerial asserts them by default.
+                self._serial.dtr = False
+                self._serial.rts = False
                 self._serial.reset_input_buffer()
             except (OSError, serial.SerialException) as err:
                 self._serial = None
