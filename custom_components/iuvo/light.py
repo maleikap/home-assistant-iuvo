@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .const import STATE_LAMPS
 from .entity import IuvoEntity
 from .protocol import build_set_lamp
+from .project_profile import is_shutter_module
 
 
 async def async_setup_entry(
@@ -22,6 +23,7 @@ async def async_setup_entry(
     async_add_entities(
         IuvoLight(coordinator, module, channel)
         for module in coordinator.data.values()
+        if not is_shutter_module(module.module_type)
         for channel in range(1, 9)
     )
 
