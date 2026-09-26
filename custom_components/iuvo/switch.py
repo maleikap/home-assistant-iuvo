@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .const import STATE_OUTPUTS
 from .entity import IuvoEntity
 from .protocol import build_set_output
+from .project_profile import SWITCH_NAMES, is_shutter_module
 
 
 async def async_setup_entry(
@@ -22,6 +23,7 @@ async def async_setup_entry(
     async_add_entities(
         IuvoSwitch(coordinator, module, channel)
         for module in coordinator.data.values()
+        if not is_shutter_module(module.module_type)
         for channel in range(1, 7)
     )
 
@@ -31,7 +33,9 @@ class IuvoSwitch(IuvoEntity, SwitchEntity):
 
     def __init__(self, coordinator, module, channel: int) -> None:
         super().__init__(coordinator, module, channel, STATE_OUTPUTS)
-        self._attr_name = f"Wyjście {channel}"
+        self._attr_name = SWITCH_NAMES.get(module.address, {}).get(
+            channel, f"Wyjście {channel}"
+        )
         self._optimistic_state = False
         self._attr_assumed_state = True
 
