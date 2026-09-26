@@ -41,7 +41,7 @@ _MODULE_TYPES = {
     "1": "IUVO Controller0806",
     "2": "IUVO Controller0806RTC",
     "3": "IUVO Roller Shutter0804",
-    "4": "IUVO module type 4",
+    "4": "IUVO Controller0806T",
 }
 
 
