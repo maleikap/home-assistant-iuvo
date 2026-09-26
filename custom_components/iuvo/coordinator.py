@@ -61,19 +61,11 @@ class IuvoCoordinator(DataUpdateCoordinator[dict[int, IuvoModule]]):
         return lines
 
     async def async_rescan(self) -> dict[int, IuvoModule]:
-        """Discover up to 32 module addresses using read-only queries."""
-        discovered: dict[int, IuvoModule] = {}
-        for address in range(1, self.max_modules + 1):
-            # Both module families found in IUVO Expert expose eight inputs, so
-            # one read-only query is enough for initial address discovery.
-            lines = await self.async_command(build_state_command(STATE_INPUTS, address))
-            frames = [parse_frame(line) for line in lines]
-            if any(frame and frame.kind != "unknown" for frame in frames):
-                module = self.modules.setdefault(address, IuvoModule(address=address))
-                module.online = True
-                module.last_seen = time.time()
-                discovered[address] = module
-        self.modules.update(discovered)
+        """Discover modules with the sequence recovered from IUVO Expert."""
+        lines = await self.hass.async_add_executor_job(
+            self.client.discover, self.max_modules
+        )
+        self._consume(lines)
         self._discovery_complete = True
         return self.modules
 
