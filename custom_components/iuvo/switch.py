@@ -32,22 +32,32 @@ class IuvoSwitch(IuvoEntity, SwitchEntity):
     def __init__(self, coordinator, module, channel: int) -> None:
         super().__init__(coordinator, module, channel, STATE_OUTPUTS)
         self._attr_name = f"Wyjście {channel}"
+        self._optimistic_state = False
+        self._attr_assumed_state = True
 
     @property
     def is_on(self) -> bool:
         """Return output state."""
-        return self._channel_value() != 0
+        if self.kind in self.module.states:
+            return self._channel_value() != 0
+        return self._optimistic_state
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn on using IUVO's safe toggle only when currently off."""
         if not self.is_on:
             await self._send(build_set_output(self.module_address, self.channel))
+            self._optimistic_state = True
+            self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off using IUVO's safe toggle only when currently on."""
         if self.is_on:
             await self._send(build_set_output(self.module_address, self.channel))
+            self._optimistic_state = False
+            self.async_write_ha_state()
 
     async def async_toggle(self, **kwargs) -> None:
         """Toggle output."""
         await self._send(build_set_output(self.module_address, self.channel))
+        self._optimistic_state = not self._optimistic_state
+        self.async_write_ha_state()
