@@ -248,18 +248,25 @@ class IuvoSerialClient:
 
                 lines: list[str] = []
                 pending = bytearray()
-                # Expert queues address 0 through 32 and sends one command on
-                # every timer tick. Keep the port open for the whole scan.
+                # Keep the port open for the whole scan. Real installations
+                # can be noisy (time/temperature broadcasts share the bus),
+                # so retry an address when its AT+Find response is lost.
                 for address in range(0, max_modules + 1):
-                    command = f"AT+Search=0,{address}\r\n".encode("ascii")
-                    self._serial.write(command)
-                    self._serial.flush()
-                    # Modules answer on the shared bus. A shorter interval can
-                    # overlap responses; the original program uses ~250 ms.
-                    time.sleep(0.25)
-                    self._read_available(lines, pending)
+                    marker = f"AT+Find={address},"
+                    for _attempt in range(3):
+                        command = f"AT+Search=0,{address}\r\n".encode("ascii")
+                        self._serial.write(command)
+                        self._serial.flush()
+                        reply_deadline = time.monotonic() + 0.35
+                        while time.monotonic() < reply_deadline:
+                            self._read_available(lines, pending)
+                            if any(line.startswith(marker) for line in lines):
+                                break
+                            time.sleep(0.02)
+                        if any(line.startswith(marker) for line in lines):
+                            break
 
-                deadline = time.monotonic() + max(1.0, self.timeout)
+                deadline = time.monotonic() + max(1.5, self.timeout)
                 while time.monotonic() < deadline:
                     self._read_available(lines, pending)
                     time.sleep(0.02)
