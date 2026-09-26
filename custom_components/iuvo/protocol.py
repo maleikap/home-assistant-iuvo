@@ -60,8 +60,12 @@ class IuvoModule:
 
     @property
     def identifier(self) -> str:
-        """Return stable identifier, preferring the hardware MAC."""
-        return self.mac or f"address-{self.address}"
+        """Return a stable identifier unique on one IUVO bus."""
+        # The second AT+Find field is a module family/firmware number, not a
+        # unique MAC: several modules commonly report e.g. 0604. The bus
+        # address is therefore required to prevent HA merging devices.
+        suffix = f"-{self.mac}" if self.mac else ""
+        return f"address-{self.address}{suffix}"
 
 
 @dataclass(slots=True)
