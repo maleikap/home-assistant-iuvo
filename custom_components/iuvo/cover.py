@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .const import STATE_SHUTTERS
 from .entity import IuvoEntity
 from .protocol import build_set_shutter
+from .project_profile import COVER_NAMES, is_shutter_module
 
 
 async def async_setup_entry(
@@ -22,6 +23,7 @@ async def async_setup_entry(
     async_add_entities(
         IuvoCover(coordinator, module, channel)
         for module in coordinator.data.values()
+        if is_shutter_module(module.module_type)
         for channel in range(1, 5)
     )
 
@@ -35,7 +37,9 @@ class IuvoCover(IuvoEntity, CoverEntity):
 
     def __init__(self, coordinator, module, channel: int) -> None:
         super().__init__(coordinator, module, channel, STATE_SHUTTERS)
-        self._attr_name = f"Roleta {channel}"
+        self._attr_name = COVER_NAMES.get(module.address, {}).get(
+            channel, f"Roleta {channel}"
+        )
 
     @property
     def is_opening(self) -> bool:
