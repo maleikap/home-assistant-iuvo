@@ -29,7 +29,12 @@ _STATE_NAMES = {
 _STATE_RE = re.compile(
     r"^(?:AT\+)?(StanIn|StanOut|StanLamp|StanRol)\s*=\s*(.+)$", re.IGNORECASE
 )
-_FIND_RE = re.compile(r"^(?:AT\+)?(?:Find|Search)\s*=\s*(.+)$", re.IGNORECASE)
+_FIND_RE = re.compile(r"^AT\+Find\s*=\s*(.+)$", re.IGNORECASE)
+_MODULE_TYPES = {
+    "1": "IUVO Controller0806",
+    "2": "IUVO Controller0806RTC",
+    "3": "IUVO Roller Shutter0804",
+}
 
 
 class IuvoError(Exception):
@@ -99,17 +104,12 @@ def parse_frame(line: str) -> ParsedFrame | None:
                 address = int(fields[0], 0)
             except ValueError:
                 pass
-        mac = next(
-            (item for item in fields if re.fullmatch(r"[0-9A-Fa-f]{4,12}", item)), None
-        )
-        module_type = next(
-            (
-                item
-                for item in fields
-                if "IUVO" in item or "Controller" in item or "Roller" in item
-            ),
-            None,
-        )
+        # IUVO Expert expects: AT+Find=<address>,<serial>,<type code>.
+        # Type codes 1/2/3 are translated exactly like the original program.
+        mac = fields[1] if len(fields) > 1 and fields[1] else None
+        module_type = None
+        if len(fields) > 2:
+            module_type = _MODULE_TYPES.get(fields[2], fields[2] or None)
         return ParsedFrame(
             "discovery", address, mac=mac, module_type=module_type, raw=raw
         )
@@ -230,3 +230,56 @@ class IuvoSerialClient:
             except (OSError, serial.SerialException) as err:
                 self.close()
                 raise IuvoConnectionError(str(err)) from err
+
+    def discover(self, max_modules: int) -> list[str]:
+        """Run the read-only discovery sequence used by IUVO Expert."""
+        with self._lock:
+            if not self.connected:
+                self.connect()
+            assert self._serial is not None
+            try:
+                self._serial.reset_input_buffer()
+                self._serial.write(b"AT\r\n")
+                self._serial.flush()
+
+                lines: list[str] = []
+                pending = bytearray()
+                # Expert queues address 0 through 32 and sends one command on
+                # every timer tick. Keep the port open for the whole scan.
+                for address in range(0, max_modules + 1):
+                    command = f"AT+Search=0,{address}\r\n".encode("ascii")
+                    self._serial.write(command)
+                    self._serial.flush()
+                    time.sleep(0.12)
+                    self._read_available(lines, pending)
+
+                deadline = time.monotonic() + max(1.0, self.timeout)
+                while time.monotonic() < deadline:
+                    self._read_available(lines, pending)
+                    time.sleep(0.02)
+                if pending:
+                    decoded = pending.decode("ascii", errors="replace").strip()
+                    if decoded:
+                        lines.append(decoded)
+                return lines
+            except (OSError, serial.SerialException) as err:
+                self.close()
+                raise IuvoConnectionError(str(err)) from err
+
+    def _read_available(self, lines: list[str], pending: bytearray) -> None:
+        """Append all complete CR/LF-delimited frames currently buffered."""
+        assert self._serial is not None
+        waiting = self._serial.in_waiting
+        if waiting:
+            pending.extend(self._serial.read(waiting))
+        while True:
+            match = re.search(rb"[\r\n]", pending)
+            if match is None:
+                return
+            raw = bytes(pending[: match.start()])
+            del pending[: match.end()]
+            while pending[:1] in (b"\r", b"\n"):
+                del pending[:1]
+            decoded = raw.decode("ascii", errors="replace").strip()
+            if decoded:
+                lines.append(decoded)
