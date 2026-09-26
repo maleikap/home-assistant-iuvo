@@ -37,10 +37,10 @@ class IuvoEntity(CoordinatorEntity[IuvoCoordinator]):
 
     @property
     def available(self) -> bool:
-        """Return entity availability."""
-        return (
-            super().available and self.module.online and self.kind in self.module.states
-        )
+        """Return availability based on module discovery/communication."""
+        # IUVO does not return a full snapshot for AT+Stan*=0. State frames are
+        # event-driven, so lack of a cached channel value must not block control.
+        return super().available and self.module.online
 
     @property
     def device_info(self) -> DeviceInfo:
