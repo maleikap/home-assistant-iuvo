@@ -1,4 +1,4 @@
-# IUVO RS-232 for Home Assistant
+# IUVO RS-232 dla Home Assistant
 
 <p align="center">
   <a href="https://buycoffee.to/homeon">
@@ -6,82 +6,54 @@
   </a>
 </p>
 
-Lokalna integracja systemu automatyki **IUVO** z Home Assistantem przez RS-232.
+Lokalna integracja sterowników **IUVO** z Home Assistant przez port RS-232. Odczytuje stany modułów oraz udostępnia wyjścia, lampki i rolety jako encje Home Assistant. Komunikacja działa z prędkością **115200 baud, 8N1**; komendy tekstowe kończą się `CR LF`.
 
-Projekt powstał na podstawie analizy programu IUVO Expert 2.23. Komunikacja jest
-tekstowa, pracuje z prędkością **115200 baud, 8N1**, a komendy są zakończone
-znakami `CR LF`.
+Aktualna wersja w `manifest.json`: **0.1.10**. To integracja rozwijana i testowana na rzeczywistej instalacji. Przed użyciem sterowania roletami i bramami sprawdź przypisanie kanałów do fizycznych urządzeń.
 
-## Stan projektu
+## Obsługiwane funkcje
 
-Wersja `0.1.0` jest wersją terenową do pierwszego testu z prawdziwą instalacją.
-Odczyt stanów i wykrywanie modułów są bezpieczne (tylko odczyt). Programowanie
-pamięci modułów jest celowo zablokowane do czasu potwierdzenia protokołu.
+- Wykrywanie modułów pod adresami 1–32 (limit można zmienić w opcjach).
+- Wyjścia przekaźnikowe jako `switch`, lampki jako `light`, rolety jako `cover`.
+- Dwa skonfigurowane wyjścia bramowe jako przyciski chwilowe `button`: moduł 1 / wyjście 5 oraz moduł 2 / wyjście 6. Impuls trwa 0,7 s.
+- Wejścia są udostępniane jako `binary_sensor`; można je ukryć w interfejsie, jeśli nie są potrzebne.
+- Przycisk ponownego wykrycia modułów i czujnik czasu ostatniej odpowiedzi.
+- Odczyt stanów cyklicznie co **5 sekund** domyślnie; zakres ustawienia to 2–60 sekund. Po wysłaniu komendy integracja żąda dodatkowego odświeżenia. Zmiana fizycznego przycisku będzie więc zwykle widoczna przy następnym odczycie, zależnie od czasu odpowiedzi magistrali.
+- Usługi `iuvo.rescan` i `iuvo.send_command` do diagnostyki. Komendy rozpoczynające się od `AT+key=` i `AT+Save=` są blokowane.
 
-## Funkcje
+Integracja rozpoznaje typ modułu z odpowiedzi magistrali. Encje rolet powstają dla modułów typu **Roller Shutter**; przekaźniki i lampki dla pozostałych modułów. Nazwy części kanałów i dwa wyjścia bramowe są obecnie zapisane w `custom_components/iuvo/project_profile.py` dla projektu Knop. Nazwy encji można dostosować w Home Assistant.
 
-- automatyczne wykrywanie do 32 adresów modułów;
-- obsługa `IUVO Controller0806`, `Controller0806T/RTC` i `Roller Shutter0804`;
-- wejścia jako `binary_sensor`;
-- wyjścia jako `switch`;
-- lampki jako `light`;
-- rolety jako `cover`;
-- diagnostyka ostatniej odpowiedzi;
-- konfiguracja portu i parametrów odpytywania z interfejsu HA;
-- bezpieczna usługa diagnostyczna do wysyłania komend AT;
-- blokada komend `AT+key` i `AT+Save`.
+## Wymagany sprzęt
 
-## Sprzęt
+- Home Assistant z dostępem do portu szeregowego, np. Raspberry Pi z Home Assistant OS.
+- Izolowany konwerter USB–RS232 i odpowiedni przewód do systemu IUVO.
 
-- Raspberry Pi z Home Assistant OS;
-- izolowany konwerter USB–RS232 (zalecany FTDI);
-- odpowiedni przewód RS-232 do systemu IUVO.
+Nie podłączaj RS-232 bezpośrednio do GPIO Raspberry Pi: poziomy napięć są niezgodne.
 
-Nie podłączaj RS-232 bezpośrednio do GPIO Raspberry Pi. Poziomy napięć są
-niezgodne i mogą uszkodzić komputer.
+## Instalacja i konfiguracja
 
-## Instalacja przez HACS
+1. W HACS otwórz **Integracje → menu → Repozytoria niestandardowe**.
+2. Dodaj `https://github.com/maleikap/home-assistant-iuvo` jako typ **Integracja**.
+3. Zainstaluj **IUVO RS-232** i uruchom ponownie Home Assistant.
+4. Wybierz **Ustawienia → Urządzenia i usługi → Dodaj integrację → IUVO RS-232**.
+5. Wpisz ścieżkę portu szeregowego; stabilna ścieżka `/dev/serial/by-id/...` jest lepsza niż `/dev/ttyUSB0`. Ustaw limit skanowanych modułów (domyślnie 32).
 
-1. HACS → Integracje → trzy kropki → Repozytoria niestandardowe.
-2. Dodaj `https://github.com/maleikap/home-assistant-iuvo` jako Integrację.
-3. Zainstaluj **IUVO RS-232** i uruchom ponownie Home Assistanta.
-4. Ustawienia → Urządzenia i usługi → Dodaj integrację → IUVO RS-232.
-5. Podaj stabilną ścieżkę portu, najlepiej `/dev/serial/by-id/...`.
+W **Opcjach** integracji można zmienić limit modułów (1–32), odstęp odczytu (2–60 s, domyślnie 5 s) i limit czasu odpowiedzi (0,1–3 s, domyślnie 0,35 s). Zmiana opcji przeładowuje integrację.
 
-## Bezpieczny pierwszy test
+## Pierwszy test
 
-1. Przed podłączeniem wykonaj kopię obecnego projektu w IUVO Expert.
-2. Dodaj integrację z limitem 32 modułów.
-3. Sprawdź logi i encje diagnostyczne.
-4. Najpierw testuj jedno światło, później jedną roletę.
-5. Nie używaj usługi `send_command` do programowania modułów.
+1. Sprawdź wykryte moduły oraz encje `Ostatnia odpowiedź`.
+2. Użyj jednego zwykłego wyjścia i potwierdź zmianę na urządzeniu oraz w Home Assistant.
+3. Testuj roletę przy fizycznym nadzorze, sprawdzając osobno otwieranie, zamykanie i zatrzymanie.
+4. Dla bramy użyj przycisku chwilowego tylko po sprawdzeniu właściwego modułu i kanału.
 
-## Znane komendy
+Stan rolety w protokole nie podaje potwierdzonej pozycji procentowej, dlatego integracja udostępnia otwieranie, zamykanie i zatrzymanie bez suwaka procentowego. Wyjścia `switch` używają komendy przełączającej i przed zmianą sprawdzają ostatni odczyt stanu; przy opóźnionym lub błędnym odczycie trzeba zweryfikować stan fizyczny.
 
-```text
-AT+StanOut=1
-AT+StanIn=1
-AT+StanLamp=1
-AT+StanRol=1
-AT+SetOut=1,3,0,0,0,0,0
-AT+SetLamp=1,1,0,0,0,0,0,0,0
-AT+SetRol=1,30,1,0,0,0
-```
+## Diagnostyka
 
-## Plan rozwoju
-
-- potwierdzenie formatów odpowiedzi na instalacji;
-- edycja nazw kanałów z panelu integracji;
-- kopia i odtworzenie konfiguracji modułów;
-- bezpieczne odtworzenie funkcji IUVO Expert w Home Assistant;
-- import dotychczasowych projektów XML.
-
-## Wsparcie projektu
-
-Rozwój integracji IUVO RS-232 i projektów HomeOn możesz wesprzeć przez [BuyCoffee](https://buycoffee.to/homeon).
+Odczyt stanów całej magistrali używa komend `AT+StanOut=0`, `AT+StanIn=0`, `AT+StanLamp=0` i `AT+StanRol=0`. Usługę `iuvo.rescan` można wywołać po zmianie połączenia modułów. Usługa `iuvo.send_command` służy do świadomej diagnostyki; nie należy używać jej do programowania pamięci modułów.
 
 ## Ważne
 
-Integracja nie jest produktem firmy IUVO i nie jest przez nią wspierana.
-Programowanie modułów przed testami terenowymi może zmienić logikę wejść,
-wyjść lub rolet.
+Projekt nie jest produktem firmy IUVO ani oficjalnie przez nią wspieraną integracją. Zrób kopię projektu w IUVO Expert przed pracami przy instalacji. Ta integracja dotyczy wyłącznie IUVO; wideodomofon Dahua VTO jest osobną integracją Home Assistant.
+
+Rozwój projektu możesz wesprzeć przez [BuyCoffee](https://buycoffee.to/homeon).
