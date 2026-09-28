@@ -10,70 +10,57 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import DOMAIN, STATE_OUTPUTS
 from .entity import IuvoEntity
-from .project_profile import MOMENTARY_OUTPUTS, SWITCH_NAMES, is_shutter_module
 from .protocol import build_set_output
+from .project_profile import is_shutter_module
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddConfigEntryEntitiesCallback,
-) -> None:
-    """Set up all detected IUVO relay channels."""
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
     coordinator = entry.runtime_data
+    momentary_outputs = coordinator.project_profile.momentary_outputs
     registry = er.async_get(hass)
     for module in coordinator.data.values():
-        for address, channel in MOMENTARY_OUTPUTS:
+        for address, channel in momentary_outputs:
             if address != module.address:
                 continue
             unique_id = f"{module.identifier}-{STATE_OUTPUTS}-{channel}"
             entity_id = registry.async_get_entity_id("switch", DOMAIN, unique_id)
             if entity_id is not None:
                 registry.async_remove(entity_id)
-
     async_add_entities(
         IuvoSwitch(coordinator, module, channel)
         for module in coordinator.data.values()
         if not is_shutter_module(module.module_type)
         for channel in range(1, 7)
-        if (module.address, channel) not in MOMENTARY_OUTPUTS
+        if (module.address, channel) not in momentary_outputs
     )
 
 
 class IuvoSwitch(IuvoEntity, SwitchEntity):
-    """One IUVO output."""
-
     def __init__(self, coordinator, module, channel: int) -> None:
         super().__init__(coordinator, module, channel, STATE_OUTPUTS)
-        self._attr_name = SWITCH_NAMES.get(module.address, {}).get(
-            channel, f"Wyjście {channel}"
-        )
+        self._attr_name = coordinator.project_profile.switch_name(module.address, channel)
         self._optimistic_state = False
         self._attr_assumed_state = False
 
     @property
     def is_on(self) -> bool:
-        """Return output state."""
         if self.kind in self.module.states:
             return self._channel_value() != 0
         return self._optimistic_state
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn on using IUVO's safe toggle only when currently off."""
         if not self.is_on:
             await self._send(build_set_output(self.module_address, self.channel))
             self._optimistic_state = True
             self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn off using IUVO's safe toggle only when currently on."""
         if self.is_on:
             await self._send(build_set_output(self.module_address, self.channel))
             self._optimistic_state = False
             self.async_write_ha_state()
 
     async def async_toggle(self, **kwargs) -> None:
-        """Toggle output."""
         await self._send(build_set_output(self.module_address, self.channel))
         self._optimistic_state = not self._optimistic_state
         self.async_write_ha_state()
