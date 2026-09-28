@@ -12,9 +12,11 @@ from homeassistant.core import callback
 from .const import (
     CONF_MAX_MODULES,
     CONF_POLL_INTERVAL,
+    CONF_PROFILE_PATH,
     CONF_RESPONSE_TIMEOUT,
     DEFAULT_MAX_MODULES,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_PROFILE_PATH,
     DEFAULT_RESPONSE_TIMEOUT,
     DOMAIN,
     MAX_MODULES,
@@ -55,15 +57,8 @@ class IuvoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             else:
                 await self.hass.async_add_executor_job(client.close)
-                return self.async_create_entry(
-                    title=f"IUVO ({port})",
-                    data=user_input,
-                )
-        return self.async_show_form(
-            step_id="user",
-            data_schema=_port_schema(),
-            errors=errors,
-        )
+                return self.async_create_entry(title=f"IUVO ({port})", data=user_input)
+        return self.async_show_form(step_id="user", data_schema=_port_schema(), errors=errors)
 
     @staticmethod
     @callback
@@ -86,25 +81,10 @@ class IuvoOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_MAX_MODULES,
-                        default=current.get(
-                            CONF_MAX_MODULES,
-                            self._entry.data.get(CONF_MAX_MODULES, DEFAULT_MAX_MODULES),
-                        ),
-                    ): vol.All(
-                        vol.Coerce(int), vol.Range(min=MIN_MODULES, max=MAX_MODULES)
-                    ),
-                    vol.Required(
-                        CONF_POLL_INTERVAL,
-                        default=current.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=2, max=60)),
-                    vol.Required(
-                        CONF_RESPONSE_TIMEOUT,
-                        default=current.get(
-                            CONF_RESPONSE_TIMEOUT, DEFAULT_RESPONSE_TIMEOUT
-                        ),
-                    ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=3.0)),
+                    vol.Required(CONF_MAX_MODULES, default=current.get(CONF_MAX_MODULES, self._entry.data.get(CONF_MAX_MODULES, DEFAULT_MAX_MODULES))): vol.All(vol.Coerce(int), vol.Range(min=MIN_MODULES, max=MAX_MODULES)),
+                    vol.Required(CONF_POLL_INTERVAL, default=current.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): vol.All(vol.Coerce(int), vol.Range(min=2, max=60)),
+                    vol.Required(CONF_RESPONSE_TIMEOUT, default=current.get(CONF_RESPONSE_TIMEOUT, DEFAULT_RESPONSE_TIMEOUT)): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=3.0)),
+                    vol.Optional(CONF_PROFILE_PATH, default=current.get(CONF_PROFILE_PATH, DEFAULT_PROFILE_PATH)): str,
                 }
             ),
         )
