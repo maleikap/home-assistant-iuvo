@@ -8,11 +8,13 @@ PLATFORMS = ["binary_sensor", "button", "cover", "light", "sensor", "switch"]
 CONF_MAX_MODULES = "max_modules"
 CONF_POLL_INTERVAL = "poll_interval"
 CONF_RESPONSE_TIMEOUT = "response_timeout"
+CONF_PROFILE_PATH = "profile_path"
 
 DEFAULT_BAUDRATE = 115200
 DEFAULT_MAX_MODULES = 32
 DEFAULT_POLL_INTERVAL = 5
 DEFAULT_RESPONSE_TIMEOUT = 0.35
+DEFAULT_PROFILE_PATH = ""
 
 MIN_MODULES = 1
 MAX_MODULES = 32
