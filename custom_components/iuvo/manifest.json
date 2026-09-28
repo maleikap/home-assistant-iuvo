@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/maleikap/home-assistant-iuvo/issues",
   "requirements": ["pyserial==3.5"],
-  "version": "0.1.10"
+  "version": "0.2.0"
 }
