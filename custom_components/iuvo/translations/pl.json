@@ -1,33 +1,9 @@
 {
   "title": "IUVO RS-232",
   "config": {
-    "step": {
-      "user": {
-        "title": "Połączenie z IUVO",
-        "description": "Podłącz izolowany adapter USB–RS232. IUVO Expert używa 115200, 8N1.",
-        "data": {
-          "port": "Port szeregowy",
-          "max_modules": "Maksymalna liczba modułów"
-        }
-      }
-    },
-    "error": {
-      "cannot_connect": "Nie można otworzyć portu szeregowego"
-    },
-    "abort": {
-      "already_configured": "Ten port jest już skonfigurowany"
-    }
+    "step": {"user": {"title": "Połączenie z IUVO", "description": "Podłącz izolowany adapter USB–RS232. IUVO Expert używa 115200, 8N1.", "data": {"port": "Port szeregowy", "max_modules": "Maksymalna liczba modułów"}}},
+    "error": {"cannot_connect": "Nie można otworzyć portu szeregowego"},
+    "abort": {"already_configured": "Ten port jest już skonfigurowany"}
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Ustawienia IUVO",
-        "data": {
-          "max_modules": "Maksymalna liczba modułów",
-          "poll_interval": "Odstęp odpytywania w sekundach",
-          "response_timeout": "Limit odpowiedzi w sekundach"
-        }
-      }
-    }
-  }
+  "options": {"step": {"init": {"title": "Ustawienia IUVO", "data": {"max_modules": "Maksymalna liczba modułów", "poll_interval": "Odstęp odpytywania w sekundach", "response_timeout": "Limit odpowiedzi w sekundach", "profile_path": "Ścieżka opcjonalnego profilu klienta JSON"}}}}
 }
